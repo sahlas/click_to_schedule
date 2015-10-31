@@ -9,7 +9,7 @@ import org.openqa.selenium.*;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.support.ui.Select;
 
-public class ClickToSchedule00 {
+public class AlienTest {
   private WebDriver driver;
   private String baseUrl;
   private boolean acceptNextAlert = true;
@@ -23,13 +23,12 @@ public class ClickToSchedule00 {
   }
 
   @Test
-  public void testClickToSchedule00() throws Exception {
-    driver.get(baseUrl + "/app/devauto/workflows/BLAZE001/schedule/appointment-type?wfsid=b0da17d3-baba97f6-b0da17dc-baba97f6-00000002-ohrsgljk3cc3timai0up6vsqaak6068m&locationId=westford&fs=1");
-    driver.findElement(By.cssSelector("#tt_form_ChoiceButton_2 > table > tbody > tr > td.labelContainer > label > div.labelNode")).click();
-    driver.findElement(By.id("computersoffice")).click();
+  public void testAlien() throws Exception {
+    driver.get(baseUrl + "/app/devauto/workflows/BLAZE001/schedule/appointment-type?wfsid=b0da17dc-baba97f6-b0da17d2-baba97f6-00000002-5iqk9h6hjsa2hr6k154hdrndl76h94tg&locationId=westford&fs=1");
+    driver.findElement(By.cssSelector("td.labelContainer")).click();
     driver.findElement(By.id("nextBtn")).click();
-    new Select(driver.findElement(By.id("tt_form_ChoiceSelect_0"))).selectByVisibleText("4:00 PM");
-    driver.findElement(By.cssSelector("option[value=\"2015-10-27T18:00:00.000Z\"]")).click();
+    new Select(driver.findElement(By.id("tt_form_ChoiceSelect_0"))).selectByVisibleText("8:00 PM");
+    driver.findElement(By.cssSelector("option[value=\"2015-10-28T00:00:00.000Z\"]")).click();
     driver.findElement(By.id("nextBtn")).click();
     driver.findElement(By.name("attendee_person_firstName")).clear();
     driver.findElement(By.name("attendee_person_firstName")).sendKeys("Bill");
@@ -37,9 +36,9 @@ public class ClickToSchedule00 {
     driver.findElement(By.name("attendee_person_lastName")).sendKeys("Sahlas");
     driver.findElement(By.id("attendee_email")).clear();
     driver.findElement(By.id("attendee_email")).sendKeys("bill.sahlas@gmail.com");
+    new Select(driver.findElement(By.id("questionId__current"))).selectByVisibleText("Yes");
     driver.findElement(By.id("nextBtn")).click();
     driver.findElement(By.id("nextBtn")).click();
-    driver.findElement(By.cssSelector("input.button.primary")).click();
   }
 
   @After
