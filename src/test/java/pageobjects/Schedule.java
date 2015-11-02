@@ -2,18 +2,19 @@ package pageobjects;
 
 
 import org.openqa.selenium.By;
-import org.openqa.selenium.NotFoundException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.Select;
 
 import java.util.List;
+import java.util.Random;
 
 import static org.junit.Assert.assertTrue;
 
 public class Schedule extends Base{
 
     private WebDriver driver;
+    private String timeSlotChosen;
 
 
     // initialize this later when the appointmentName is passed from the test
@@ -25,7 +26,7 @@ public class Schedule extends Base{
 
     // Availability - used to select the first available date on the page that contains time slots
     By availabilityToolbar = By.id("atoolbar");
-    By timeSlotchoiceSelectLocator = By.id("tt_form_ChoiceSelect_0");
+    By timeSlotChoiceSelectLocator = By.id("tt_form_ChoiceSelect_0");
     By slotContainer = By.cssSelector(".slotContainer");
     By weekView = By.id("WeekDateTime");
 
@@ -45,20 +46,17 @@ public class Schedule extends Base{
     }
 
     /**
-     *  Setup the page object with defaults for your test
+     *  Setup the page object with Default Attendees for your test
      * @param appointmentType
      * @param appointmentName
-     * @param firstName
-     * @param lastName
-     * @param email
      * @param isWeek - when true, will switch to a Week view for the time slots page
+     * @param isRandom - when true will pick a random timeslot otherwise picks index 1
      */
-    public void with(String appointmentType, String appointmentName,
-                     String firstName, String lastName, String email, Boolean isWeek) {
+    public void withDefaultAttendees(String appointmentType, String appointmentName, Boolean isWeek, Boolean isRandom) {
         // Select an appointment type
         selectAppointmentType(appointmentType, appointmentName);
         // choose a time
-        chooseTimeSlot(isWeek);
+        chooseTimeSlot(isWeek, isRandom);
         // fill in the attendee information
         fillAttendeeInfo(appointmentName, firstName, lastName, email);
         //schedule it and
@@ -68,48 +66,85 @@ public class Schedule extends Base{
     }
 
     /**
+     * Schedule appointments and specify the attendees information
+     * @param appointmentType
+     * @param appointmentName
+     * @param firstName
+     * @param lastName
+     * @param email
+     */
+    public void withAttendees(String appointmentType, String appointmentName,
+                              String firstName, String lastName, String email) {
+        // Select an appointment type
+        selectAppointmentType(appointmentType, appointmentName);
+        // choose a time
+        chooseTimeSlot(false, false);
+        // fill in the attendee information
+        fillAttendeeInfo(appointmentName, firstName, lastName, email);
+        //schedule it and
+        scheduleAppointment();
+        // review confirmation page and check for confirmation # or a rejection notice
+        reviewConfirmationPage();
+    }
+
+    public void withoutAppointmentType(){
+        // Select an appointment type
+        selectAppointmentType(null, null);
+    }
+
+    /**
      * wrapper for appointmentType
      * @param appointmentType - enum value used to lookup the element on the page
      * @param appointmentName - enum name used for description here
      */
     public void selectAppointmentType(String appointmentType, String appointmentName) {
-        driver.findElement(appointmentTypeLocator).click();
+        if(appointmentType!=null) {
+            driver.findElement(appointmentTypeLocator).click();
 
-        choiceLocator =  By.id(appointmentType);
-        System.out.println("type: " + appointmentType);
-        switch (appointmentName) {
-            case "ALIEN":
-                driver.findElement(choiceLocator).click();
-                break;
-            case "COMPOFFICE":
-                driver.findElement(choiceLocator).click();
-                break;
-            case "INDIANA":
-                driver.findElement(choiceLocator).click();
-                break;
-            default:
-                System.out.println("type: " + appointmentName);
-                break;
+            choiceLocator =  By.id(appointmentType);
+            System.out.println("type: " + appointmentType);
+            switch (appointmentName) {
+                case "ALIEN":
+                    driver.findElement(choiceLocator).click();
+                    break;
+                case "COMPOFFICE":
+                    driver.findElement(choiceLocator).click();
+                    break;
+                case "INDIANA":
+                    driver.findElement(choiceLocator).click();
+                    break;
+                default:
+                    System.out.println("type: " + appointmentName);
+                    break;
+            }
+        } else {
+            // try to submit without first making choice
+            driver.findElement(By.id("nextBtn")).click();
         }
 
         driver.findElement(By.id("nextBtn")).click();
     }
 
-    public void chooseTimeSlot (Boolean isWeek) {
-        // Can validate location
+    public void chooseTimeSlot(Boolean isWeek, Boolean isRandom) {
+        Random rand = new Random();
+        int idx = 0, numSlots = 0;
 
         // wait for the calendar which holds the timeslots to load
-        waitForIsDisplayed(timeSlotchoiceSelectLocator, 5);
+        waitForIsDisplayed(timeSlotChoiceSelectLocator, 5);
+        // determine the number of available time slots and choose a random available time
+        numSlots = numAvailableSlots(timeSlotChoiceSelectLocator);
 
         if (isWeek) {
             // choose either Week
             driver.findElement(By.cssSelector(".subtle.first")).click();
             waitForIsDisplayed(weekView, 5);
             //        waitForIsDisplayed(slotContainer, 5);
-            // pick the first time slot
-            new Select(driver.findElement(By.cssSelector("#tt_form_ChoiceSelect_21"))).selectByIndex(1);
+            idx = (isRandom) ? rand.nextInt(numSlots) + 1 : 1;
+            new Select(driver.findElement(By.cssSelector("#tt_form_ChoiceSelect_21"))).selectByIndex(idx);
+
         } else {
-            new Select(driver.findElement(timeSlotchoiceSelectLocator)).selectByIndex(1);
+            idx = (isRandom) ? rand.nextInt(numSlots) + 1 : 1;
+            new Select(driver.findElement(timeSlotChoiceSelectLocator)).selectByIndex(idx);
         }
         // move to the next phase in booking the appointment
         driver.findElement(By.id("nextBtn")).click();
@@ -145,13 +180,25 @@ public class Schedule extends Base{
                 System.out.println("This type '" + appointmentName + "' does not require additional information.");
                 break;
         }
-
         driver.findElement(By.id("nextBtn")).click();
-
     }
 
     public void scheduleAppointment () {
         driver.findElement(By.id("nextBtn")).click();
+    }
+
+    public int numAvailableSlots (By bytimeSlotChoice) {
+        List<WebElement> options;
+        String availableSlotsLabel;
+        int availableSlots;
+        WebElement firstSelectedOption = new Select(driver.findElement(bytimeSlotChoice)).getFirstSelectedOption();
+        System.out.println("firstSelectedOption: " + firstSelectedOption.getText());
+        // reads the integer value
+        availableSlotsLabel = firstSelectedOption.getText();
+        // strip out the strings and parse the int from the value
+        availableSlots = Integer.parseInt(availableSlotsLabel.replaceAll("[\\D]", ""));
+        // keep track of the slot
+        return availableSlots;
     }
 
     public void reviewConfirmationPage () {}
@@ -164,5 +211,12 @@ public class Schedule extends Base{
         return driver.findElement(failureMessageLocator).isDisplayed();
     }
 
+    public Boolean valueRequiredMessagePresent() {
+        return driver.findElement(By.cssSelector("#attendee_email")).isDisplayed();
+    }
+
+    public Boolean valueRequiredModalDialog() {
+        return driver.findElement(By.cssSelector(".title")).isDisplayed();
+    }
 }
 
