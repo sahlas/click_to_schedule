@@ -20,14 +20,9 @@ public class Schedule extends Base{
     // initialize this later when the appointmentName is passed from the test
     By choiceLocator;
 
-
     // first page appointment type list
     By appointmentTypeLocator = By.id("tt_form_ValidationList_0");
-
-    // Availability - used to select the first available date on the page that contains time slots
-    By availabilityToolbar = By.id("atoolbar");
     By timeSlotChoiceSelectLocator = By.id("tt_form_ChoiceSelect_0");
-    By slotContainer = By.cssSelector(".slotContainer");
     By weekView = By.id("WeekDateTime");
 
     // when a double booking occurs this is useful to quickly locate and assert that the text is visibly shown to client
@@ -35,13 +30,14 @@ public class Schedule extends Base{
     // locator used to help determine whether to continue to move forward or continue waiting
     By readytoScheduleLocator = By.id("workflow-step");
 
-
     public Schedule(WebDriver driver) {
         super(driver);
         this.driver = driver;
         visit("/schedule/?locationId=westford");
-        // assert that the initial page is ready for testing, otherwise abort
-        assertTrue("The schedule application is not available, aborting!",
+        // Assert that the initial page is ready for testing, otherwise abort
+        // this assertion is OK here and is the exception to the rule that says
+        // 'keep your test code out of page object code'.
+        assertTrue("The click to schedule application is not available, aborting!",
                 isDisplayed(appointmentTypeLocator));
     }
 
@@ -121,7 +117,6 @@ public class Schedule extends Base{
             // try to submit without first making choice
             driver.findElement(By.id("nextBtn")).click();
         }
-
         driver.findElement(By.id("nextBtn")).click();
     }
 
@@ -138,12 +133,11 @@ public class Schedule extends Base{
             // choose either Week
             driver.findElement(By.cssSelector(".subtle.first")).click();
             waitForIsDisplayed(weekView, 5);
-            //        waitForIsDisplayed(slotContainer, 5);
             idx = (isRandom) ? rand.nextInt(numSlots) + 1 : 1;
             new Select(driver.findElement(By.cssSelector("#tt_form_ChoiceSelect_21"))).selectByIndex(idx);
-
         } else {
             idx = (isRandom) ? rand.nextInt(numSlots) + 1 : 1;
+            System.out.println("with index " + idx);
             new Select(driver.findElement(timeSlotChoiceSelectLocator)).selectByIndex(idx);
         }
         // move to the next phase in booking the appointment
@@ -173,11 +167,14 @@ public class Schedule extends Base{
                 new Select(driver.findElement(By.id("questionId__current"))).selectByVisibleText("Yes");
                 break;
             case "INDIANA":
-                //questionId__signed-label
                 driver.findElement(By.id("questionId__signed")).click();
                 break;
-            default:
+            case "COMPOFFICE":
                 System.out.println("This type '" + appointmentName + "' does not require additional information.");
+                break;
+            default:
+                System.out.println("Unexpected appointmentName param " + appointmentName);
+                // do some error handling
                 break;
         }
         driver.findElement(By.id("nextBtn")).click();
