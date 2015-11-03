@@ -71,7 +71,7 @@
                     <version>2.19</version>
                     <configuration>
                         <parallel>classesAndMethods</parallel>
-                        <threadCount>5</threadCount>
+                        <threadCount>10</threadCount>
                         <groups>${groups}</groups>
                     </configuration>
                 </plugin>

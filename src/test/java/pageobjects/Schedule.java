@@ -15,6 +15,9 @@ public class Schedule extends Base{
 
     private WebDriver driver;
     private String timeSlotChosen;
+    private String randomFirstName;
+    private String randomLastName;
+    private String randomEmail;
 
 
     // initialize this later when the appointmentName is passed from the test
@@ -42,9 +45,9 @@ public class Schedule extends Base{
     }
 
     /**
-     *  Setup the page object with Default Attendees for your test
-     * @param appointmentType
-     * @param appointmentName
+     *  Scheule an appointment with Default Attendees for your test
+     * @param appointmentType - the css locator used to find the correct appointment type
+     * @param appointmentName - the name of the appointment type
      * @param isWeek - when true, will switch to a Week view for the time slots page
      * @param isRandom - when true will pick a random timeslot otherwise picks index 1
      */
@@ -63,20 +66,43 @@ public class Schedule extends Base{
 
     /**
      * Schedule appointments and specify the attendees information
-     * @param appointmentType
-     * @param appointmentName
+     * @param appointmentType - the css locator used to find the correct appointment type
+     * @param appointmentName - the name of the appointment type
      * @param firstName
      * @param lastName
      * @param email
+     * @param isWeek - when true, will switch to a Week view for the time slots page
+     * @param isRandom - when true will pick a random timeslot otherwise picks index 1
      */
     public void withAttendees(String appointmentType, String appointmentName,
-                              String firstName, String lastName, String email) {
+                              String firstName, String lastName, String email, Boolean isWeek, Boolean isRandom) {
         // Select an appointment type
         selectAppointmentType(appointmentType, appointmentName);
         // choose a time
-        chooseTimeSlot(false, false);
+        chooseTimeSlot(isWeek, isRandom);
         // fill in the attendee information
         fillAttendeeInfo(appointmentName, firstName, lastName, email);
+        //schedule it and
+        scheduleAppointment();
+        // review confirmation page and check for confirmation # or a rejection notice
+        reviewConfirmationPage();
+    }
+
+
+    /**
+     * Schedule appointments and specify the attendees information using randomly generated contacts
+     * @param appointmentType - the css locator used to find the correct appointment type
+     * @param appointmentName - the name of the appointment type
+     */
+    public void withRandomAttendees(String appointmentType, String appointmentName, Boolean isWeek, Boolean isRandom) {
+        // create random contact firstName, lastName and email address
+        generateRandomContacts();
+        // Select an appointment type
+        selectAppointmentType(appointmentType, appointmentName);
+        // choose a time
+        chooseTimeSlot(isWeek, isRandom);
+        // fill in the attendee information
+        fillAttendeeInfo(appointmentName, randomFirstName, randomLastName, randomEmail);
         //schedule it and
         scheduleAppointment();
         // review confirmation page and check for confirmation # or a rejection notice
@@ -120,6 +146,13 @@ public class Schedule extends Base{
         driver.findElement(By.id("nextBtn")).click();
     }
 
+
+
+    /**
+     * wrapper for time slot selector
+     * @param isWeek - denotes either week or month calender view
+     * @param isRandom - either choose first index or select one at random
+     */
     public void chooseTimeSlot(Boolean isWeek, Boolean isRandom) {
         Random rand = new Random();
         int idx = 0, numSlots = 0;
@@ -129,11 +162,14 @@ public class Schedule extends Base{
         // determine the number of available time slots and choose a random available time
         numSlots = numAvailableSlots(timeSlotChoiceSelectLocator);
 
+        System.out.println("number of appointments: " + numSlots);
+
         if (isWeek) {
             // choose either Week
             driver.findElement(By.cssSelector(".subtle.first")).click();
             waitForIsDisplayed(weekView, 5);
             idx = (isRandom) ? rand.nextInt(numSlots) + 1 : 1;
+            System.out.println("with index " + idx);
             new Select(driver.findElement(By.cssSelector("#tt_form_ChoiceSelect_21"))).selectByIndex(idx);
         } else {
             idx = (isRandom) ? rand.nextInt(numSlots) + 1 : 1;
@@ -146,7 +182,7 @@ public class Schedule extends Base{
 
     /**
      * Complete the attendee contact information and submit
-     * @param appointmentName - choice of 3 appointment types
+     * @param appointmentName - name decides what if any extended attendee info is required
      * @param firstName - attendee first name
      * @param lastName - attendee last name
      * @param email - attendee email
@@ -200,6 +236,13 @@ public class Schedule extends Base{
 
     public void reviewConfirmationPage () {}
 
+    public void generateRandomContacts () {
+        Random rand = new Random();
+        randomFirstName = firstName + rand.nextInt(1000);
+        randomLastName = lastName + rand.nextInt(1000);
+        randomEmail = randomFirstName + randomLastName + "@test.com";
+    }
+    // Functions that check status of each page
     public Boolean readyToScheduleForm() {
         return waitForIsDisplayed(readytoScheduleLocator, 10);
     }

@@ -13,6 +13,6 @@ public interface Config {
     final String sauceKey = System.getenv("SAUCE_ACCESS_KEY");
     final String firstName = "Bill";
     final String lastName = "Sahlas";
-    final String email = "bill.sahlas@gmail.com";
+    final String email = firstName + "." + lastName + "@test.com";
 
 }
